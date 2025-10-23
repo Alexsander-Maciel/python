@@ -1,84 +1,80 @@
-# DesktopApp/views/login_window.py (Adaptado para mostrar mensagens)
+# DesktopApp/views/login_window.py
 
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QLineEdit, QPushButton, QMessageBox, QLabel
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QWidget
 from PyQt5.QtCore import Qt
+from typing import TYPE_CHECKING, List, Dict, Any
 
-class LoginWindow(QMainWindow):
-    def __init__(self, controller):
-        super().__init__()
-        self.controller = controller
-        self.setWindowTitle("Sistema Desktop - Login")
-        self.setFixedSize(300, 200)
+if TYPE_CHECKING:
+    from DesktopApp.controllers.user_controller import UserController
+    from DesktopApp.views.main_window import MainWindow
+    from DesktopApp.models.entities.user import User
 
-        self._init_ui()
+class LoginWindow(QDialog):
+    """
+    Janela modal para login de usuário.
+    """
+    def __init__(self, user_controller: 'UserController', main_window: 'MainWindow', parent: QWidget = None):
+        super().__init__(parent)
+        self.user_controller = user_controller
+        self.main_window = main_window # Referência à MainWindow
+        self.setWindowTitle("Login do Sistema")
+        self.setFixedSize(350, 200)
 
-    def _init_ui(self):
-        # Layout principal
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        self.init_ui()
 
-        # Campos de entrada
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+
+        # Campo Usuário
+        user_layout = QHBoxLayout()
+        user_layout.addWidget(QLabel("Usuário:"))
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Nome de Usuário")
+        self.username_input.setText("admin")
+        user_layout.addWidget(self.username_input)
+        layout.addLayout(user_layout)
+
+        # Campo Senha
+        password_layout = QHBoxLayout()
+        password_layout.addWidget(QLabel("Senha:"))
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Senha")
         self.password_input.setEchoMode(QLineEdit.Password)
-        
-        # Botões
-        self.login_button = QPushButton("Entrar")
-        self.register_button = QPushButton("Criar Nova Conta")
-
-        # Adiciona widgets ao layout
-        layout.addWidget(QLabel("Login:"))
-        layout.addWidget(self.username_input)
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.login_button)
-        layout.addWidget(self.register_button)
-
-        # Conexões
-        self.login_button.clicked.connect(self._on_login_clicked)
-        self.register_button.clicked.connect(self._on_register_clicked)
-        
-        # DEBUG: Preenche campos com valores de teste (opcional)
-        self.username_input.setText("admin") 
         self.password_input.setText("123")
+        password_layout.addWidget(self.password_input)
+        layout.addLayout(password_layout)
 
-    def _on_login_clicked(self):
+        # Botão Login
+        self.login_button = QPushButton("Entrar")
+        self.login_button.clicked.connect(self._handle_login)
+        self.username_input.returnPressed.connect(self._handle_login)
+        self.password_input.returnPressed.connect(self._handle_login)
+        layout.addWidget(self.login_button)
+
+    def _handle_login(self):
+        """
+        Tenta autenticar o usuário e, em caso de sucesso, abre a janela principal.
+        """
         username = self.username_input.text()
         password = self.password_input.text()
-        
-        # Chama o método do Controller
-        self.controller.handle_login_request(username, password)
-    
-    def _on_register_clicked(self):
-        # AQUI VAMOS INSERIR O USUÁRIO DE TESTE SEMPRE QUE O BOTÃO FOR CLICADO
-        username = "admin"
-        password = "123" 
-        full_name = "Administrador Local"
-        
+
+        if not username or not password:
+            QMessageBox.warning(self, "Aviso", "Por favor, preencha todos os campos.")
+            return
+
         try:
-            self.controller.handle_register_request(username, password, full_name)
-        
-        except ValueError as e:
-            # Erro de regra de negócio (ex: usuário já existe)
-            self.show_error_message(f"Falha no Cadastro: {e}")
-        
-        except Exception as e:
-            # Erro inesperado (ex: falha na conexão DB/hash)
-            self.show_error_message("Erro no sistema ao cadastrar. Verifique o console.")
+            # 1. Chamar o Controller para autenticar e obter menus
+            user, accessible_menus = self.user_controller.handle_login(username, password)
             
-    # --- MÉTODOS PARA O CONTROLLER COMUNICAR COM A VIEW ---
+            # 2. Configurar a Janela Principal com os dados do usuário (Método Corrigido)
+            self.main_window.update_ui_after_login(user, accessible_menus)
+            
+            # 3. Exibir a Janela Principal e fechar a de login
+            self.main_window.show()
+            self.accept() 
 
-    def show_error_message(self, message: str):
-        """Exibe uma mensagem de erro na View."""
-        QMessageBox.critical(self, "Erro de Autenticação", message)
-        
-    def show_success_message(self, message: str):
-        """Exibe uma mensagem de sucesso na View."""
-        QMessageBox.information(self, "Sucesso", message)
-        # Limpa os campos após o sucesso para incentivar o login
-        self.username_input.clear()
-        self.password_input.clear()
+        except ValueError as e:
+            QMessageBox.warning(self, "Erro de Login", str(e))
+            self.password_input.clear()
 
-# FIM DO ARQUIVO
+        except Exception as e:
+            QMessageBox.critical(self, "Erro Crítico", f"Erro fatal no sistema: {e}")
+            print(f"ERRO FATAL NO LOGIN: {e}")

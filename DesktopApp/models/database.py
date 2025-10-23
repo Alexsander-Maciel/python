@@ -38,6 +38,10 @@ def init_db():
     """
     # Importa as entidades aqui para garantir que Base as conheça
     from DesktopApp.models.entities.user import User
+    from DesktopApp.models.entities.product import Product
+    from DesktopApp.models.entities.menu import Menu
+    from DesktopApp.models.entities.group import Group       
+    from DesktopApp.models.entities.permission import Permission 
     # from DesktopApp.models.entities.group import Group # Importe suas outras entidades aqui
     
     # IMPORTANTE: Recria o esquema se você teve erros de coluna.

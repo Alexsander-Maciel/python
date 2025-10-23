@@ -1,9 +1,12 @@
+# DesktopApp/repositories/user_repository.py
+
 from typing import Optional
 from sqlalchemy.orm import Session
-# CORREÇÃO 1: Módulo IRMÃO (no mesmo diretório repositories/)
+# CORREÇÃO CRÍTICA: Importação ABSOLUTA para resolver ModuleNotFoundError
+from DesktopApp.models.entities.user import User 
 from .base_repository import BaseRepository 
-# CORREÇÃO 2: Módulo VIZINHO (volta para models/, desce para entities/)
-from ..entities.user import User
+# Nota: O BaseRepository deve estar no mesmo diretório ou ter um caminho de importação definido.
+
 
 class UserRepository(BaseRepository[User]):
     """
@@ -18,6 +21,3 @@ class UserRepository(BaseRepository[User]):
     def get_by_username(self, username: str) -> Optional[User]:
         """Busca um usuário pelo seu nome de usuário único."""
         return self.session.query(User).filter(User.username == username).first()
-
-    # Nota da Dra. Elara: Métodos como add, get_by_id, delete, 
-    # já estão disponíveis por herança do BaseRepository!

@@ -2,7 +2,7 @@ from typing import TypeVar, Generic, Type, List, Optional
 from sqlalchemy.orm import Session
 # CORREÇÃO: Usa importação RELATIVA para subir um nível (de repositories/ para models/)
 # e acessar o módulo database.py, que é vizinho da pasta repositories.
-from ..database import Base  # <--- CORREÇÃO AQUI
+from ..models.database import Base  
 
 # Define um tipo genérico (T) que será a nossa entidade (ex: User, Group)
 T = TypeVar('T', bound=Base)
